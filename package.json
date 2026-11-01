@@ -1,0 +1,28 @@
+{
+  "name": "bili-region-plus",
+  "version": "0.2.3",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zerobeyondlogic/biliinsert.git"
+  },
+  "homepage": "https://github.com/zerobeyondlogic/biliinsert#readme",
+  "bugs": "https://github.com/zerobeyondlogic/biliinsert/issues",
+  "type": "module",
+  "description": "B站评论、楼中楼、主页与动态 IP 属地及关注时间补全扩展",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "node --test tests/*.test.js",
+    "test:browser": "node tests/browser.mjs"
+  },
+  "dependencies": {
+    "blueimp-md5": "^2.19.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2",
+    "playwright": "^1.64.1",
+    "sharp": "^0.35.5"
+  }
+}

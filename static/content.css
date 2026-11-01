@@ -1,0 +1,19 @@
+.brp-label {
+  display: inline !important;
+  margin-inline-start: 12px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--brp-color, var(--text3, #9499a0)) !important;
+  font-family: inherit !important;
+  font-size: var(--brp-font-size, 12px) !important;
+  font-weight: 400 !important;
+  line-height: inherit !important;
+  letter-spacing: inherit !important;
+  text-shadow: none !important;
+  vertical-align: baseline !important;
+  white-space: nowrap !important;
+  cursor: default !important;
+}

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+artifacts/
+.browser-profile/
+.env
+.env.*
+*.log
+playwright-report/
+test-results/
