@@ -1,4 +1,5 @@
 import md5 from 'blueimp-md5';
+import {normalizeRegion} from './region.js';
 
 // Public client parameters and protocol: lzghzr/libBilibiliToken (MIT).
 // Profile location tags: maxchang3/userscripts/BiliRevealForSpace (MIT).
@@ -50,10 +51,7 @@ export function signQuery(params, login = false, timestamp = Math.floor(Date.now
 }
 
 export function locationText(value) {
-  if (typeof value !== 'string') return null;
-  const text = value.replace(/[\u0000-\u001f\u007f]/g, '').trim();
-  if (!text || text.length > 80) return null;
-  const region = text.replace(/^IP\s*属地\s*[:：]?\s*/i, '').trim();
+  const region = normalizeRegion(value);
   return region ? `IP属地：${region}` : null;
 }
 

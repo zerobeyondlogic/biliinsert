@@ -1,4 +1,5 @@
 import {MARKER, TARGETS, parseBinding, validId} from './binding.js';
+import {normalizeRegion} from './region.js';
 
 let settings = {profile:false, dynamic:false}, timer, profileState, inFlight = 0, lastHref = location.href;
 const states = new Map(), visible = new Set();
@@ -15,14 +16,31 @@ const observer = new IntersectionObserver(entries => {
   schedule();
 }, {rootMargin:'400px'});
 function remove(state) { state?.label?.remove(); if (state) state.label = null; }
-function region(text) {
-  if (typeof text !== 'string' || text.length > 100) return null;
-  const result = text.replace(/^IP\s*(?:归属地|属地)\s*[:：]?\s*/i, '').trim();
-  return result && !/^(未知|未知地区|未知属地|暂无|无|--)$/.test(result) ? result : null;
+function metadataText(node) {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent;
+  if (!(node instanceof Element) || node.matches('.brp-label')) return '';
+  const walker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT, {
+    acceptNode: text => text.parentElement?.closest('.brp-label') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+  });
+  let text = '', current;
+  while ((current = walker.nextNode()) && text.length < 1000) text += ` ${current.textContent}`;
+  return text;
+}
+function hasNativeLocation(el) {
+  const parts = [metadataText(el)];
+  // Only inspect the publication metadata, never the post body or another card.
+  if (el.matches('.bili-dyn-time')) {
+    let sibling = el.nextSibling;
+    for (let count = 0; sibling && count < 8; count++, sibling = sibling.nextSibling) {
+      if (sibling instanceof Element && !sibling.matches('span,small,.location,.ip-location')) break;
+      parts.push(metadataText(sibling));
+    }
+  }
+  return normalizeRegion(parts.join(' '), {requireMarker:true}) !== null;
 }
 function place(el, state, kind) {
-  const value = state.result?.ok ? region(state.result.location) : null;
-  if (!value || !settings[kind]) { remove(state); return; }
+  const value = state.result?.ok ? normalizeRegion(state.result.location) : null;
+  if (!value || !settings[kind] || (kind === 'dynamic' && hasNativeLocation(el))) { remove(state); return; }
   let label = state.label;
   if (!label) {
     label = document.createElement('span'); label.className = 'brp-label'; state.label = label;

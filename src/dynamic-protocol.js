@@ -1,16 +1,13 @@
 // Adapted from Chihiro521/bili-ip-region (MIT), protocol.ts, commit b1ede0b29c4612eacfa0ad5b864237d821d5cd02.
 // Copyright (c) 2026 Chihiro521. See licenses/bili-ip-region-MIT.txt.
 // Decode only the requested post's top-level author/footer, never its forwarded content.
+import { normalizeRegion, parseRegion } from './region.js';
 const encoder = new TextEncoder();
 const decoder = new TextDecoder('utf-8', { fatal: true });
 const MAX_BYTES = 16 * 1024 * 1024;
 
 export function normalizeDynamicRegion(value) {
-  if (typeof value !== 'string') return null;
-  const region = value.trim().replace(/^IP\s*(?:归属地|属地)\s*[:：]\s*/i, '').trim();
-  if (!region || region.length > 64 || /[\x00-\x1f\x7f<>]/.test(region)
-    || /^(?:未知(?:地区|属地)?|暂无(?:数据|信息)?|无|--?|null|undefined)$/i.test(region)) return null;
-  return region;
+  return normalizeRegion(value);
 }
 
 export function validateDynamicId(id) {
@@ -101,7 +98,7 @@ export function decodeDynamicResponse(method, frame) {
   if (extendedId && opusId && extendedId !== opusId) throw new Error('Opus ID 与动态 ID 不一致');
   const returnedId = extendedId || opusId;
   let authorMid = null;
-  const regions = new Set();
+  const regions = new Map();
   let source = null;
   for (const module of item.filter(field => field.number === (opus ? 4 : 3) && field.wire === 2)) {
     const list = fields(module.bytes);
@@ -111,16 +108,18 @@ export function decodeDynamicResponse(method, frame) {
       const mid = intAt(author, 1)?.toString() ?? null;
       if (authorMid && mid && authorMid !== mid) throw new Error('动态作者字段不一致');
       authorMid = authorMid || mid;
-      const region = normalizeDynamicRegion(textAt(author, 14));
-      if (region) { regions.add(region); source = 'author'; }
+      const parsed = parseRegion(textAt(author, 14));
+      if (parsed.reason === 'conflict') throw new Error('同一动态的属地来源不一致');
+      if (parsed.region) { regions.set(parsed.region.toLocaleLowerCase('en'), parsed.region); source = 'author'; }
     }
     const footer = bytesAt(list, 31);
     if (footer) for (const caption of fields(footer).filter(field => [1, 2].includes(field.number) && field.wire === 2)) {
       const text = decoder.decode(caption.bytes);
-      // Other footer text (copyright etc.) is not an IP region.
-      if (!/^\s*IP\s*(?:归属地|属地)\s*[:：]/i.test(text)) continue;
-      const region = normalizeDynamicRegion(text);
-      if (region) { regions.add(region); source = 'copyright'; }
+      // The owner's caption may start with view counts. General footer text is
+      // accepted only when an explicit IP-location marker identifies the region.
+      const parsed = parseRegion(text, { requireMarker: true });
+      if (parsed.reason === 'conflict') throw new Error('同一动态的属地来源不一致');
+      if (parsed.region) { regions.set(parsed.region.toLocaleLowerCase('en'), parsed.region); source = 'copyright'; }
     }
   }
   if (regions.size > 1) throw new Error('同一动态的属地来源不一致');

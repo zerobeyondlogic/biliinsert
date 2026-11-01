@@ -2,7 +2,7 @@
 
 为 Chrome / Edge 补全 B站网页中的 **IP 属地和关注时间**，采用普通文字样式，支持个人主页、动态、评论及楼中楼。
 
-**当前版本：v0.2.3** · [下载最新版](https://github.com/zerobeyondlogic/biliinsert/releases/latest) · [更新记录](CHANGELOG.md) · [来源与许可](THIRD_PARTY_NOTICES.md)
+**当前版本：v0.2.4** · [下载最新版](https://github.com/zerobeyondlogic/biliinsert/releases/latest) · [更新记录](CHANGELOG.md) · [来源与许可](THIRD_PARTY_NOTICES.md)
 
 ## 功能
 
@@ -101,6 +101,7 @@ npm run build
 ~~~sh
 npx playwright install chromium
 npm run test:browser
+node tests/dynamic-self-browser.mjs
 node tests/comments-browser.mjs
 node tests/subscribe-time-browser.mjs
 node tests/popup-auth-browser.mjs

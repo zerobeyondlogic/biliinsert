@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { ApiError, createApi, parseCredential, parseProfile, requestSignal, signQuery } from '../src/api.js';
+import { ApiError, createApi, locationText, parseCredential, parseProfile, requestSignal, signQuery } from '../src/api.js';
 import { createBackground, senderAccess } from '../src/background.js';
 
 const NOW = 1800000000000;
@@ -55,6 +55,13 @@ test('profile uses server location tags only, including bottom tags', () => {
   assert.throws(() => parseProfile({ code: 0, data: { card: { mid: 124, space_tag: [{ type: 'location', title: '北京' }] } } }, '123'), /不匹配/);
   assert.throws(() => parseProfile({ code: 0, data: { card: { space_tag: [{ type: 'location', title: '北京' }] } } }, '123'), /不匹配/);
   assert.throws(() => parseProfile({ code: -101 }, '123'), error => error.reason === 'auth');
+});
+
+test('display formatting extracts own-post location and never prefixes view counts', () => {
+  assert.equal(locationText('215浏览 IP属地：上海'), 'IP属地：上海');
+  assert.equal(locationText('IP属地：215浏览 IP属地：上海'), 'IP属地：上海');
+  assert.equal(locationText('215浏览'), null);
+  assert.equal(locationText('IP属地：上海 IP属地：北京'), null);
 });
 
 test('profile API never treats lack of authorization as empty and sends no browser cookies', async () => {

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "B站属地补全",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "以 B站原生文字风格补全评论、楼中楼、主页与动态的 IP 属地，并显示关注时间。",
   "minimum_chrome_version": "111",
   "permissions": ["storage", "declarativeNetRequestWithHostAccess"],

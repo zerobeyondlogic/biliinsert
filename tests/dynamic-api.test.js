@@ -39,6 +39,43 @@ test('queries Opus when author location is missing and accepts only explicit IP 
   }));
   assert.equal(result.region, '广东'); assert.deepEqual(calls, ['DynDetail', 'OpusDetail']);
 });
+test('own dynamic author metadata extracts the same region as the public-view field', async () => {
+  for (const raw of ['上海', 'IP属地：上海', '215浏览 IP属地：上海', '215浏览\u00a0IP属地：上海',
+    '215浏览\u3000·\u3000IP属地：上海', 'IP属地：215浏览 IP属地：上海']) {
+    const result = await queryDynamic(id, token, options(async url => new Response(frame(url.split('/').at(-1), { region: raw }))));
+    assert.equal(result.status, 'ok', raw); assert.equal(result.region, '上海', raw);
+  }
+});
+test('owner-only counters before a footer marker are accepted and agree with the author', async () => {
+  for (const region of [null, '上海', '215浏览 IP属地：上海']) {
+    const result = await queryDynamic(id, token, options(async url => new Response(frame(url.split('/').at(-1), {
+      region, footer: '215浏览 · IP属地：上海',
+    }))));
+    assert.equal(result.status, 'ok'); assert.equal(result.region, '上海');
+  }
+  const unmarked = await queryDynamic(id, token, options(async url => new Response(frame(url.split('/').at(-1), {
+    region: null, footer: '上海',
+  }))));
+  assert.equal(unmarked.status, 'empty');
+  const sameInternational = await queryDynamic(id, token, options(async url => new Response(frame(url.split('/').at(-1), {
+    region: 'United States', footer: '215 views · IP属地：United States',
+  }))));
+  assert.equal(sameInternational.status, 'ok'); assert.equal(sameInternational.region, 'United States');
+});
+test('mixed or repeated conflicting regions cannot be hidden by a valid field', async () => {
+  for (const fixture of [
+    {region:'215浏览 IP属地：上海', footer:'IP属地：北京'},
+    {region:'IP属地：上海 IP属地：北京', footer:'IP属地：上海'},
+    {region:'上海', footer:'215浏览 IP属地：上海 IP属地：北京'},
+  ]) {
+    const result = await queryDynamic(id, token, options(async url => new Response(frame(url.split('/').at(-1), fixture))));
+    assert.equal(result.status, 'error'); assert.equal(result.region, null);
+  }
+  const statsOnly = await queryDynamic(id, token, options(async url => new Response(frame(url.split('/').at(-1), {
+    region:'215浏览', footer:'215阅读', forwardedRegion:'IP属地：广东',
+  }))));
+  assert.equal(statsOnly.status, 'empty'); assert.equal(statsOnly.region, null);
+});
 test('never borrows forwarded post or profile regions when the post has no region', async () => {
   const result = await queryDynamic(id, token, options(async url => new Response(frame(url.split('/').at(-1), {
     region: null, forwardedRegion: 'IP属地：浙江', footer: '上海工作室 版权所有',
